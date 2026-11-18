@@ -1,46 +1,113 @@
-# Detection-as-Code Security Pipeline — Personal Portfolio Starter
+# Detection-as-Code Security Pipeline
 
-**Status: new, locally testable starter implementation (2026-11-18).** This scaffold was created with AI assistance to help establish verifiable portfolio evidence. It is **not proof** of an earlier implementation or a deployed enterprise detection stack. The repository should only be presented as independently maintained once you have run, understood, and improved it.
+[![Detection-as-Code CI](https://github.com/michae1lm/Detection-as-Code/actions/workflows/detection-ci.yml/badge.svg)](https://github.com/michae1lm/Detection-as-Code/actions/workflows/detection-ci.yml)
 
-## What it demonstrates
+A **personal cybersecurity learning lab** demonstrating how Sigma detection rules can be version-controlled, validated, and tested automatically with GitHub Actions.
 
-- Three original example **Sigma YAML detection rules**: Windows Security log clearing (Event ID 1102), suspicious PowerShell encoded-command arguments, and certutil URLCache usage.
-- Rules in version control with IDs, log sources, levels, references to false positives, and MITRE technique tags.
-- A lightweight Python structural validator that blocks missing required keys, duplicate rule IDs, and unsupported expressions.
-- Six **synthetic test events** with expected positive and negative matches, plus unit tests.
-- A GitHub Actions workflow to execute the checks on each push or pull request.
+**Current status:** Working **offline proof of concept**, tested locally on Windows (November 18, 2026) and in [GitHub Actions](https://github.com/michae1lm/Detection-as-Code/actions/runs/44422863761). The initial starter was assembled with AI assistance; it is a learning and testing exercise, not evidence of an enterprise deployment or earlier work.
 
-## Quick start
+## At a glance
 
-Requirements: Python 3.9+ and PyYAML.
+| Component | Verified scope |
+| --- | --- |
+| Detection rules | 3 experimental Sigma-format Windows rules |
+| Example events | 6 synthetic positive and negative cases |
+| Unit tests | 5 tests passed locally |
+| Continuous integration | GitHub Actions validation and tests **passed** |
+| Runtime | Python 3.9+ and PyYAML; no SIEM or cloud account required |
 
-```bash
-python -m pip install -r requirements.txt
-python scripts/validate_rules.py
-python scripts/check_fixtures.py
-python -m unittest discover -s tests -v
+The CI badge links to the repository's workflow. [View a successful run](https://github.com/michae1lm/Detection-as-Code/actions/runs/44422863761).
+
+## What it detects
+
+| Rule | Detection condition | Triage caveat |
+| --- | --- | --- |
+| **Windows Security Audit Log Cleared** | Security Event ID **1102** | Authorized administrators may clear logs |
+| **PowerShell Encoded Command Execution** | `powershell.exe` launched with `-EncodedCommand` or `-enc` | Encoded PowerShell may be legitimate automation |
+| **Certutil URLCache Download Command** | `certutil.exe` invoked with `-urlcache` | Certificate workflows and tests may trigger |
+
+All three rules are marked **experimental**. A rule match is a candidate for investigation, **not proof of malicious activity**.
+
+## Try it on Windows
+
+Open PowerShell or Command Prompt in the repository root and install the dependency:
+
+```powershell
+py -m pip install -r requirements.txt
+py scripts/validate_rules.py
+py scripts/check_fixtures.py
+py -m unittest discover -s tests -v
 ```
 
-## Architecture
+On Linux or macOS, replace `py` with `python3` (or your available Python command).
+
+Expected final summaries on the supplied files:
 
 ```text
-Sigma YAML rules --> structural validation --> local fixture match checks
-          |                                        |
-          +-------------- GitHub Actions CI ------+
+3 rules passed structural checks
+6 synthetic fixtures passed
+Ran 5 tests
+OK
 ```
 
-## Scope and limitations
+The tests use **synthetic fixtures** in `fixtures/events.json`; they do not execute the suspicious commands or connect to a real Windows endpoint.
 
-This is a **minimal offline test harness**, not a full Sigma engine. It currently supports one `selection`, `condition: selection`, simple `AND` field matching, scalar/list `OR` values, and selected `contains` / `endswith` / `startswith` modifiers. It does not evaluate arbitrary Sigma boolean conditions, backend conversion, regex, correlations, or full field mappings.
+## How the pipeline works
 
-The events in `fixtures/` are entirely synthetic. A passing test does not prove accurate detection on real telemetry, and not every possible command-line representation is covered. No SIEM integration or production detection rates are claimed. For standards-compliant parsing and conversion, consider [pySigma / sigma-cli](https://github.com/SigmaHQ/sigma-cli) and its backend plugins as a later extension.
+```text
+rules/windows/*.yml --------> scripts/validate_rules.py
+           |                          |
+           v                          v
+fixtures/events.json -------> scripts/check_fixtures.py
+                                      |
+                                      v
+                             tests/test_pipeline.py
+                                      |
+                                      v
+                           GitHub Actions workflow
+```
 
-## Suggested next personal contribution
+1. **Rule validation:** `validate_rules.py` loads YAML and checks required fields, UUID IDs, duplicate IDs, selection structure, and the supported field modifiers.
+2. **Fixture matching:** `check_fixtures.py` evaluates each event against the three rule selections and compares the matched rule IDs to expected IDs.
+3. **Unit testing:** `tests/test_pipeline.py` checks valid/invalid rules, case-insensitive matching, missing fields, and the six fixtures.
+4. **CI:** `.github/workflows/detection-ci.yml` runs the checks on pushes and pull requests.
 
-Run the pipeline locally, add a fourth rule of your own, generate at least one negative test case, and explain a false-positive scenario. Then publish a screenshot of a successful CI run and document your results in the README.
+**Matching model:** Conditions currently require every selected field to match (**AND** across fields). A list of values for one field uses **OR**. The matcher supports equality plus `contains`, `endswith`, and `startswith` modifiers, using case-insensitive text comparison.
 
-## Reference
+For example, the encoded PowerShell rule requires **both** an executable path ending in `\powershell.exe` **and** a command line containing ` -EncodedCommand ` or ` -enc `. Ordinary PowerShell commands lacking the option should not match.
 
-- [Sigma rule specification](https://sigmahq.io/sigma-specification/specification/sigma-rules-specification.html)
-- [Sigma rules fundamentals](https://sigmahq.io/docs/basics/rules.html)
+## Repository layout
+
+```text
+.github/workflows/detection-ci.yml    CI checks
+rules/windows/                        Three experimental Sigma YAML rules
+scripts/validate_rules.py             Rule structure validation
+scripts/check_fixtures.py             Minimal offline rule evaluator
+fixtures/events.json                  Synthetic positive/negative examples
+tests/test_pipeline.py                Five Python unit tests
+requirements.txt                      Python dependency
+```
+
+## Add your own rule
+
+1. Copy an existing file in `rules/windows/` and give the new rule a distinct UUID and descriptive title.
+2. Define its `logsource`, `detection.selection`, `condition: selection`, MITRE tags, and possible false positives.
+3. Add **one matching event and one non-matching event** to `fixtures/events.json` with the correct `expected_rule_ids`.
+4. Update the hard-coded rule/fixture counts in `tests/test_pipeline.py`, then run all three commands above.
+5. Commit your changes and confirm GitHub Actions passes. Explain why your chosen rule may have false positives.
+
+## Limitations
+
+- This is **not** a complete Sigma engine and does not support arbitrary Sigma expressions, backend conversion, correlations, regular expressions, or real SIEM field mappings.
+- It does **not** ingest live Windows logs, deploy to Splunk/Sentinel, or automatically investigate incidents.
+- Sample events are synthetic, so detection accuracy, false-positive rates, and performance on real telemetry have **not** been measured.
+- The simple command-line patterns will miss some variations, and some legitimate activity can produce matches.
+- The pipeline demonstrates repeatable **testing**, not a production detection deployment.
+
+## References
+
+- [Sigma rules specification](https://sigmahq.io/sigma-specification/specification/sigma-rules-specification.html)
+- [Sigma rule fundamentals](https://sigmahq.io/docs/basics/rules.html)
 - [Sigma CLI](https://github.com/SigmaHQ/sigma-cli)
+
+**Portfolio note:** This lab is an AI-assisted starter that was run and verified as a personal learning exercise. Discuss and extend the implementation before describing its rules or test harness as independently authored.
