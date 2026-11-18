@@ -1,0 +1,20 @@
+title: Certutil URLCache Download Command
+id: 3c76d96c-4d63-4948-a824-0b9cb8be78ba
+status: experimental
+description: Identifies certutil URLCache command-line usage that may download content from a remote resource.
+author: Personal Detection Lab
+date: 2026-11-18
+tags:
+  - attack.command-and-control
+  - attack.t1105
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\certutil.exe'
+    CommandLine|contains: ' -urlcache '
+  condition: selection
+falsepositives:
+  - Administrator use of certutil for legitimate certificate or test workflows
+level: medium

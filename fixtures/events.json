@@ -1,0 +1,54 @@
+[
+  {
+    "name": "audit log cleared",
+    "event": {
+      "EventID": 1102
+    },
+    "expected_rule_ids": [
+      "81abb2cb-5efa-4910-8a54-a2b3a5354806"
+    ]
+  },
+  {
+    "name": "routine log event",
+    "event": {
+      "EventID": 4624
+    },
+    "expected_rule_ids": []
+  },
+  {
+    "name": "powershell encoded argument",
+    "event": {
+      "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "CommandLine": "powershell.exe -EncodedCommand dABlAHMAdAA="
+    },
+    "expected_rule_ids": [
+      "453a9e17-545b-4997-a883-3f70a1e2ad13"
+    ]
+  },
+  {
+    "name": "ordinary powershell",
+    "event": {
+      "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "CommandLine": "powershell.exe -NoProfile -Command Get-Process"
+    },
+    "expected_rule_ids": []
+  },
+  {
+    "name": "certutil urlcache",
+    "event": {
+      "Image": "C:\\Windows\\System32\\certutil.exe",
+      "CommandLine": "certutil.exe -urlcache -split -f https://example.invalid/test.txt test.txt"
+    },
+    "expected_rule_ids": [
+      "3c76d96c-4d63-4948-a824-0b9cb8be78ba"
+    ]
+  },
+  {
+    "name": "certutil benign",
+    "event": {
+      "Image": "C:\\Windows\\System32\\certutil.exe",
+      "CommandLine": "certutil.exe -verify example.cer"
+    },
+    "expected_rule_ids": []
+  }
+]

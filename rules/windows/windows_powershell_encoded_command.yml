@@ -1,0 +1,22 @@
+title: Windows PowerShell Encoded Command Execution
+id: 453a9e17-545b-4997-a883-3f70a1e2ad13
+status: experimental
+description: Identifies PowerShell launched with an encoded-command argument in process creation logs.
+author: Personal Detection Lab
+date: 2026-11-18
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains:
+      - ' -EncodedCommand '
+      - ' -enc '
+  condition: selection
+falsepositives:
+  - Authorized scripts or administrative automation
+level: medium
